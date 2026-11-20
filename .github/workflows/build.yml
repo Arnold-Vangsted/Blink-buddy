@@ -61,18 +61,26 @@ jobs:
           path: dist/${{ matrix.zip }}
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Hvert push til main udgiver en Release med versionsnummeret fra blink_buddy.py
+    # (APP_VERSION). Samme version igen opdaterer filerne i den eksisterende Release.
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: [windows, mac]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: echo "v=v$(sed -n 's/^APP_VERSION = "\(.*\)"/\1/p' blink_buddy.py)" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           path: out
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
           files: |
             out/Blink-Buddy-Windows/Blink-Buddy.exe
             out/Blink-Buddy-Mac/Blink-Buddy-mac.zip
             out/Blink-Buddy-Mac-Intel/Blink-Buddy-mac-intel.zip
-          name: Blink Buddy ${{ github.ref_name }}
-          body: "Blink Buddy til Windows og Mac. Programmerne er ikke kodesigneret: på Windows vælges 'Flere oplysninger' og 'Kør alligevel'; på Mac åbnes appen første gang via Systemindstillinger → Anonymitet og sikkerhed → 'Åbn alligevel'. Blink-Buddy-mac.zip er til Mac med Apple-chip (M1 og nyere), Blink-Buddy-mac-intel.zip til ældre Mac med Intel."
+          name: Blink Buddy ${{ steps.ver.outputs.v }}
+          body: "Blink Buddy til Windows og Mac. Programmerne er ikke kodesigneret hos Microsoft eller Apple: på Windows vælges 'Flere oplysninger' og 'Kør alligevel'; på Mac åbnes appen første gang via Systemindstillinger → Anonymitet og sikkerhed → 'Åbn alligevel'. Blink-Buddy-mac.zip er til Mac med Apple-chip (M1 og nyere), Blink-Buddy-mac-intel.zip til Mac med Intel."
