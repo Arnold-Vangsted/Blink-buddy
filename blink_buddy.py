@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDia
 
 ORG_NAME = "Dry Eye"
 APP_NAME = "Blink Buddy"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 URL_DRYEYE = "https://dryeye.dk"
 URL_REDSYNET = "https://www.eyerescue.net/da/"
 
