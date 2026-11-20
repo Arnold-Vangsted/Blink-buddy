@@ -37,9 +37,11 @@ jobs:
         include:
           - runner: macos-latest
             zip: Blink-Buddy-mac.zip
+            dmg: Blink-Buddy-mac.dmg
             artifact: Blink-Buddy-Mac
           - runner: macos-15-intel
             zip: Blink-Buddy-mac-intel.zip
+            dmg: Blink-Buddy-mac-intel.dmg
             artifact: Blink-Buddy-Mac-Intel
     runs-on: ${{ matrix.runner }}
     steps:
@@ -55,10 +57,17 @@ jobs:
       # Uden ny (ad hoc) signatur siger macOS, at appen "er beskadiget".
       - run: codesign --force --deep --sign - "dist/Blink Buddy.app" && codesign --verify --deep --strict "dist/Blink Buddy.app"
       - run: ditto -c -k --keepParent "dist/Blink Buddy.app" "dist/${{ matrix.zip }}"
+      # Installationsfil (.dmg): åbner et vindue med Blink Buddy og en genvej til Programmer,
+      # så man bare trækker det ene over i det andet.
+      - run: |
+          mkdir -p dmg && cp -R "dist/Blink Buddy.app" dmg/ && ln -s /Applications dmg/Programmer
+          hdiutil create -volname "Blink Buddy" -srcfolder dmg -ov -format UDZO "dist/${{ matrix.dmg }}"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/${{ matrix.zip }}
+          path: |
+            dist/${{ matrix.zip }}
+            dist/${{ matrix.dmg }}
 
   release:
     # Hvert push til main udgiver en Release med versionsnummeret fra blink_buddy.py
@@ -82,5 +91,7 @@ jobs:
             out/Blink-Buddy-Windows/Blink-Buddy.exe
             out/Blink-Buddy-Mac/Blink-Buddy-mac.zip
             out/Blink-Buddy-Mac-Intel/Blink-Buddy-mac-intel.zip
+            out/Blink-Buddy-Mac/Blink-Buddy-mac.dmg
+            out/Blink-Buddy-Mac-Intel/Blink-Buddy-mac-intel.dmg
           name: Blink Buddy ${{ steps.ver.outputs.v }}
           body: "Blink Buddy til Windows og Mac. Programmerne er ikke kodesigneret hos Microsoft eller Apple: på Windows vælges 'Flere oplysninger' og 'Kør alligevel'; på Mac åbnes appen første gang via Systemindstillinger → Anonymitet og sikkerhed → 'Åbn alligevel'. Blink-Buddy-mac.zip er til Mac med Apple-chip (M1 og nyere), Blink-Buddy-mac-intel.zip til Mac med Intel."
